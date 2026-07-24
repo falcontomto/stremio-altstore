@@ -2,8 +2,8 @@
 
 [![Update source](https://github.com/gorlev/stremio-altstore/actions/workflows/update.yml/badge.svg)](https://github.com/gorlev/stremio-altstore/actions/workflows/update.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Stremio iOS versions](https://img.shields.io/badge/iOS-7%20versions-7055D9)](stremio-ios.json)
-[![Stremio tvOS versions](https://img.shields.io/badge/tvOS-4%20versions-7055D9)](stremio-tvos.json)
+[![Stremio iOS versions](https://img.shields.io/badge/iOS-11%20versions-7055D9)](stremio-ios.json)
+[![Stremio tvOS versions](https://img.shields.io/badge/tvOS-7%20versions-7055D9)](stremio-tvos.json)
 
 An **unofficial** AltStore-format source collection for Stremio iOS and tvOS, compatible with any signing app that consumes the standard AltStore source format — Feather, AltStore Classic, AltStore PAL, ESign, Scarlet, Sideloadly, and others. Stremio's official source at [`dl.strem.io/apple/altstore/source.json`](https://dl.strem.io/apple/altstore/source.json) cannot be parsed by most third-party signing apps because it uses Apple's encrypted App Store Connect manifest format — this repo publishes standard AltStore-format JSON sources that point to Stremio's plain IPA artifacts.
 
@@ -12,6 +12,7 @@ An **unofficial** AltStore-format source collection for Stremio iOS and tvOS, co
 - [Why does this repo exist?](#why-does-this-repo-exist)
 - [Compatible signing apps](#compatible-signing-apps)
 - [Quick start](#quick-start)
+- [Self-host your own copy](#self-host-your-own-copy)
 - [Available versions](#available-versions)
 - [Automatic updates](#automatic-updates)
 - [Manual updates](#manual-updates)
@@ -64,50 +65,70 @@ If your signing app supports adding a source by URL pointing to an `apps.json`-s
 
 ## Quick start
 
-### 1. Fork and enable GitHub Pages
+**No fork required.** This source is already hosted and auto-updated every 6 hours. Just add it to your signing app.
 
-1. Fork this repository
-2. Go to **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main` / `(root)`**
-3. After a few minutes your sources will be live at:
-   ```
-   https://<your-github-username>.github.io/stremio-altstore/stremio-ios.json
-   https://<your-github-username>.github.io/stremio-altstore/stremio-tvos.json
-   ```
+### One-tap install
 
-### 2. Update `sourceURL` in the JSON files
+Open this page **on your iPhone / iPad** and tap your app — the source opens prefilled:
 
-Change the `sourceURL` field in both `stremio-ios.json` and `stremio-tvos.json` to your GitHub Pages URL:
+<p align="center">
+  <a href="https://gorlev.github.io/stremio-altstore/install.html">
+    <img src="https://img.shields.io/badge/%E2%9E%95%20Add%20to%20AltStore%20%2F%20SideStore-one%20tap-7b5bf5?style=for-the-badge&logo=apple&logoColor=white" alt="Add to AltStore / SideStore" height="42" />
+  </a>
+</p>
 
-```bash
-python3 stremio-updater.py \
-  --source-url-ios  "https://<your-github-username>.github.io/stremio-altstore/stremio-ios.json" \
-  --source-url-tvos "https://<your-github-username>.github.io/stremio-altstore/stremio-tvos.json"
-```
+Direct deep links (tap on-device, or paste into Safari):
 
-### 3. Add the source URL to your signing app
+| Platform | AltStore | SideStore |
+|---|---|---|
+| iOS / iPadOS | [Open in AltStore](altstore://source?url=https://gorlev.github.io/stremio-altstore/stremio-ios.json) | [Open in SideStore](sidestore://source?url=https://gorlev.github.io/stremio-altstore/stremio-ios.json) |
+| tvOS | [Open in AltStore](altstore://source?url=https://gorlev.github.io/stremio-altstore/stremio-tvos.json) | [Open in SideStore](sidestore://source?url=https://gorlev.github.io/stremio-altstore/stremio-tvos.json) |
 
-The exact menu path varies by app, but in all cases you paste the JSON URL into a "Sources" or "Repositories" section:
+> GitHub strips `altstore://`-style links in this README, so the table links only work once pasted into Safari. The **Add to AltStore / SideStore** button above routes through a landing page and works directly.
 
-| Platform | URL |
+### Or add the URL manually
+
+Works with **any** signing app (Feather, AltStore Classic/PAL, ESign, Scarlet, Sideloadly…). Paste the URL into the app's **Sources** / **Repositories** section:
+
+| Platform | Source URL |
 |---|---|
-| iOS / iPadOS | `https://<your-github-username>.github.io/stremio-altstore/stremio-ios.json` |
-| tvOS | `https://<your-github-username>.github.io/stremio-altstore/stremio-tvos.json` |
+| iOS / iPadOS | `https://gorlev.github.io/stremio-altstore/stremio-ios.json` |
+| tvOS | `https://gorlev.github.io/stremio-altstore/stremio-tvos.json` |
 
-Once added, Stremio will appear in the app's source list. Pick the version you want and tap **Get** (or the equivalent action) to download and sign.
+Once added, Stremio appears in the app's source list. Pick a version and tap **Get** (or the equivalent) to download and sign.
 
-### Alternative: raw GitHub URL (no Pages required)
+### Alternative: raw GitHub URL (no Pages)
 
 `sourceURL` also works with `raw.githubusercontent.com`:
 
 ```
-https://raw.githubusercontent.com/<your-github-username>/stremio-altstore/main/stremio-ios.json
+https://raw.githubusercontent.com/gorlev/stremio-altstore/main/stremio-ios.json
+https://raw.githubusercontent.com/gorlev/stremio-altstore/main/stremio-tvos.json
 ```
 
-Some signing apps require the `Content-Type: application/json` header, which GitHub Pages guarantees; raw URLs occasionally delay that header.
+Some signing apps require the `Content-Type: application/json` header, which GitHub Pages guarantees; raw URLs occasionally delay that header — prefer the `gorlev.github.io` URLs above.
+
+---
+
+## Self-host your own copy
+
+Prefer to run your own source (own URL, own update schedule)? Fork and host it in a couple of minutes:
+
+1. **Fork** this repository.
+2. Enable Pages: **Settings → Pages → Source: Deploy from a branch → Branch: `main` / `(root)`**. After a few minutes your sources are live at `https://<your-github-username>.github.io/stremio-altstore/stremio-{ios,tvos}.json`.
+3. Point `sourceURL` at your fork:
+   ```bash
+   python3 stremio-updater.py \
+     --source-url-ios  "https://<your-github-username>.github.io/stremio-altstore/stremio-ios.json" \
+     --source-url-tvos "https://<your-github-username>.github.io/stremio-altstore/stremio-tvos.json"
+   ```
+4. Commit the change. The included GitHub Actions workflow keeps your fork updated every 6 hours.
 
 ---
 
 ## Available versions
+
+<!-- BEGIN:AVAILABLE_VERSIONS -->
 
 ### iOS / iPadOS — `stremio-ios.json`
 
@@ -115,6 +136,10 @@ Some signing apps require the `Content-Type: application/json` header, which Git
 
 | Version | Build | Date | Size | Download |
 |---|---|---|---|---|
+| 2.0.6 | 21 | 2026-07-22 | 72 MB | [IPA](https://dl.strem.io/apple/2.0.6b21/ios/stremio_iOS.ipa) |
+| 2.0.5 | 20 | 2026-07-22 | 72 MB | [IPA](https://dl.strem.io/apple/2.0.5b20/ios/stremio_iOS.ipa) |
+| 2.0.4 | 19 | 2026-07-10 | 72 MB | [IPA](https://dl.strem.io/apple/2.0.4b19/ios/stremio_iOS.ipa) |
+| 2.0.3 | 18 | 2026-07-09 | 72 MB | [IPA](https://dl.strem.io/apple/2.0.3b18/ios/stremio_iOS.ipa) |
 | 2.0.2 | 17 | 2026-06-19 | 74 MB | [IPA](https://dl.strem.io/apple/2.0.2b17/ios/stremio_iOS.ipa) |
 | 2.0.1 | 16 | 2026-06-16 | 74 MB | [IPA](https://dl.strem.io/apple/2.0.1b16/ios/stremio_iOS.ipa) |
 | 2.0.1 | 15 | 2026-06-15 | 74 MB | [IPA](https://dl.strem.io/apple/2.0.1b15/ios/stremio_iOS.ipa) |
@@ -126,7 +151,7 @@ Some signing apps require the `Content-Type: application/json` header, which Git
 
 | Version | Build | Date | Size | Download |
 |---|---|---|---|---|
-| 1.3.6 beta 7 | 7 | 2026-01-31 | 76 MB | [IPA](https://dl.strem.io/apple/1.3.6b7/ios/stremio_iOS.ipa) |
+| 1.3.6 | 7 | 2026-01-31 | 75 MB | [IPA](https://dl.strem.io/apple/1.3.6b7/ios/stremio_iOS.ipa) |
 
 ### tvOS — `stremio-tvos.json`
 
@@ -134,16 +159,22 @@ Some signing apps require the `Content-Type: application/json` header, which Git
 
 | Version | Build | Date | Size | Download |
 |---|---|---|---|---|
+| 2.0.6 | 21 | 2026-07-22 | 70 MB | [IPA](https://dl.strem.io/apple/2.0.6b21/tvos/stremio_tvOS.ipa) |
+| 2.0.5 | 20 | 2026-07-22 | 70 MB | [IPA](https://dl.strem.io/apple/2.0.5b20/tvos/stremio_tvOS.ipa) |
+| 2.0.3 | 18 | 2026-07-09 | 70 MB | [IPA](https://dl.strem.io/apple/2.0.3b18/tvos/stremio_tvOS.ipa) |
 | 2.0.2 | 17 | 2026-06-19 | 70 MB | [IPA](https://dl.strem.io/apple/2.0.2b17/tvos/stremio_tvOS.ipa) |
 | 2.0.1 | 16 | 2026-06-16 | 70 MB | [IPA](https://dl.strem.io/apple/2.0.1b16/tvos/stremio_tvOS.ipa) |
 | 2.0.1 | 15 | 2026-06-15 | 70 MB | [IPA](https://dl.strem.io/apple/2.0.1b15/tvos/stremio_tvOS.ipa) |
-| 1.3.6 beta 7 | 7 | 2026-01-31 | 74 MB | [IPA](https://dl.strem.io/apple/1.3.6b7/tvos/stremio_tvOS.ipa) |
 
 #### Stremio Lite (legacy) — `com.stremio.ios`
 
 | Version | Build | Date | Size | Download |
 |---|---|---|---|---|
-| 1.3.6 beta 7 | 7 | 2026-01-31 | 74 MB | [IPA](https://dl.strem.io/apple/1.3.6b7/tvos/stremio_tvOS.ipa) |
+| 1.3.6 | 7 | 2026-01-31 | 73 MB | [IPA](https://dl.strem.io/apple/1.3.6b7/tvos/stremio_tvOS.ipa) |
+
+<!-- END:AVAILABLE_VERSIONS -->
+
+> 🤖 The tables above are auto-generated from the JSON sources by `scripts/render_readme.py` on every update — do not edit them by hand.
 
 > 📦 Every version was verified against the IPA's Info.plist (downloaded via HTTP Range, < 5 KB each). Bundle identifiers, version strings, and `MinimumOSVersion` values were read directly from the IPAs.
 
@@ -152,6 +183,13 @@ Some signing apps require the `Content-Type: application/json` header, which Git
 ## Automatic updates
 
 The repo includes a GitHub Actions workflow that runs `stremio-updater.py` every 6 hours, discovers new Stremio versions, updates the JSON files, and auto-commits. With GitHub Pages enabled, new versions appear in your signing app within minutes.
+
+Each run also, in the same job:
+
+- **Backfills integrity hashes** — `scripts/add_hashes.py` computes the `sha256` of a few IPAs per run (newest first, budget-limited so it never risks the job's time limit), so every version eventually carries a hash that signing apps can verify the download against.
+- **Regenerates the version tables** in this README from the JSON.
+
+A separate **CDN health canary** (`scripts/check_cdn.py`) runs on the same schedule. Because the updater exits successfully whether it finds new versions or finds nothing, a broken CDN (a changed URL scheme, an outage, or a pulled build) would otherwise be invisible. The canary HEAD-checks the newest known IPA for each platform and **opens a GitHub issue** (deduplicated — one at a time) if the source may be serving dead downloads.
 
 To enable the workflow: **Actions → Update Stremio source → Enable workflow**.
 
@@ -221,15 +259,20 @@ stremio-altstore/
 ├── stremio-ios.json            ← main source (iOS / iPadOS)
 ├── stremio-tvos.json           ← main source (tvOS)
 ├── stremio-updater.py          ← CDN scanner + JSON updater
+├── ipa_plist.py                ← shared HTTP-Range IPA Info.plist parser
+├── install.html                ← one-tap install landing page (GitHub Pages)
 ├── .github/
 │   ├── workflows/
-│   │   └── update.yml          ← auto-update every 6 hours
+│   │   └── update.yml          ← auto-update every 6 hours + CDN canary
 │   └── ISSUE_TEMPLATE/
 │       ├── bug_report.yml
 │       ├── feature_request.yml
 │       └── source_broken.yml
 └── scripts/
-    └── verify_bundle_ids.py    ← standalone IPA Info.plist verifier
+    ├── verify_bundle_ids.py    ← standalone IPA Info.plist verifier
+    ├── render_readme.py        ← regenerates the version tables above
+    ├── add_hashes.py           ← backfills sha256 integrity hashes (budgeted)
+    └── check_cdn.py            ← CDN health canary (opens an issue if broken)
 ```
 
 ### Why two JSON files?

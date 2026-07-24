@@ -29,12 +29,53 @@
       },
       "versions": [
         {
+          "version": "2.0.6",
+          "buildVersion": "21",
+          "date": "2026-07-22",
+          "localizedDescription": "Stremio 2.0.6 (build 21).",
+          "downloadURL": "https://dl.strem.io/apple/2.0.6b21/ios/stremio_iOS.ipa",
+          "size": 75942223,
+          "sha256": "3ff786e83de059293d57378a742c4b70d069fa745133b5f909ea0e060dabf10d",
+          "minOSVersion": "13.0"
+        },
+        {
+          "version": "2.0.5",
+          "buildVersion": "20",
+          "date": "2026-07-22",
+          "localizedDescription": "Stremio 2.0.5 (build 20).",
+          "downloadURL": "https://dl.strem.io/apple/2.0.5b20/ios/stremio_iOS.ipa",
+          "size": 76251082,
+          "sha256": "791f09fe5ff5190a56703cdf0101d905b305000f90fcd5bdb8eec149edd9665a",
+          "minOSVersion": "13.0"
+        },
+        {
+          "version": "2.0.4",
+          "buildVersion": "19",
+          "date": "2026-07-10",
+          "localizedDescription": "Stremio 2.0.4 (build 19).",
+          "downloadURL": "https://dl.strem.io/apple/2.0.4b19/ios/stremio_iOS.ipa",
+          "size": 76237174,
+          "sha256": "ed04112b86196596abb1f6a96a96246b9701edf9e3666f4cb3a348e4bdff01d5",
+          "minOSVersion": "13.0"
+        },
+        {
+          "version": "2.0.3",
+          "buildVersion": "18",
+          "date": "2026-07-09",
+          "localizedDescription": "Stremio 2.0.3 (build 18).",
+          "downloadURL": "https://dl.strem.io/apple/2.0.3b18/ios/stremio_iOS.ipa",
+          "size": 76228970,
+          "sha256": "f23c50e52756d90573c3328d7f5bb2bc5930b1fe478bf7318013d83a80cfd37a",
+          "minOSVersion": "13.0"
+        },
+        {
           "version": "2.0.2",
           "buildVersion": "17",
           "date": "2026-06-19",
           "localizedDescription": "Stremio 2.0.2 (build 17).",
           "downloadURL": "https://dl.strem.io/apple/2.0.2b17/ios/stremio_iOS.ipa",
           "size": 78053554,
+          "sha256": "1194ab49a3b0b502d7c7395630c10c4b7c66cbac5ee73abce0a509bccb65f64f",
           "minOSVersion": "13.0"
         },
         {
@@ -44,6 +85,7 @@
           "localizedDescription": "Stremio 2.0.1 (build 16).",
           "downloadURL": "https://dl.strem.io/apple/2.0.1b16/ios/stremio_iOS.ipa",
           "size": 77732193,
+          "sha256": "5fb0a315a8987981afc255192f2390637ce482e91a534f0509297843af6b0f9c",
           "minOSVersion": "13.0"
         },
         {
@@ -53,6 +95,7 @@
           "localizedDescription": "Stremio 2.0.1 (build 15).",
           "downloadURL": "https://dl.strem.io/apple/2.0.1b15/ios/stremio_iOS.ipa",
           "size": 77732699,
+          "sha256": "d4b022c25245c06b6e4425a243b96b9a84501dde8e7bd7b841362aa74be91f34",
           "minOSVersion": "13.0"
         },
         {
@@ -62,6 +105,7 @@
           "localizedDescription": "Stremio 2.0.0 (build 14).",
           "downloadURL": "https://dl.strem.io/apple/2.0.0b14/ios/stremio_iOS.ipa",
           "size": 78030906,
+          "sha256": "8bf6b174c9b1e9ce5cd7c7d01f9a94a87ac5a9285b250b9ace1b2b0b4270f0a4",
           "minOSVersion": "13.0"
         },
         {
@@ -71,6 +115,7 @@
           "localizedDescription": "Stremio 2.0.0 (build 13).",
           "downloadURL": "https://dl.strem.io/apple/2.0.0b13/ios/stremio_iOS.ipa",
           "size": 77726983,
+          "sha256": "3dd7fe41294a1f7706cb367978ba67a4729f4e668bc834fca52d616b92957197",
           "minOSVersion": "13.0"
         },
         {
@@ -80,6 +125,7 @@
           "localizedDescription": "Stremio 2.0.0 (build 11).",
           "downloadURL": "https://dl.strem.io/apple/2.0.0b11/ios/stremio_iOS.ipa",
           "size": 78020685,
+          "sha256": "61fd16aec965a6dd728b24a057e2c2d579477b9e6677b61166e29e1dd5c0fb1d",
           "minOSVersion": "13.0"
         }
       ]
@@ -107,6 +153,7 @@
           "localizedDescription": "Stremio Lite iOS v1.3.6 beta 7.",
           "downloadURL": "https://dl.strem.io/apple/1.3.6b7/ios/stremio_iOS.ipa",
           "size": 79430168,
+          "sha256": "f6731511f74567363032a937e22e432b069276c369489974d395eb4bbf837478",
           "minOSVersion": "13.0"
         }
       ]
