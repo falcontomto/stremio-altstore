@@ -78,6 +78,15 @@
       70% { box-shadow: 0 0 0 8px rgba(62, 207, 142, 0); }
       100% { box-shadow: 0 0 0 0 rgba(62, 207, 142, 0); }
     }
+    /* The dot only claims the source is alive once we have checked. If the
+       automation has stopped, it stops pulsing and changes colour rather than
+       reassuring people about something that is no longer true. */
+    .badge .pulse.warn { background: #e8a33d; box-shadow: none; animation: none; }
+    .badge .pulse.stale { background: #e5484d; box-shadow: none; animation: none; }
+    .badge.warn { color: #f0b860; border-color: rgba(232, 163, 61, .45);
+                  background: rgba(232, 163, 61, .09); }
+    .badge.stale { color: #ff8b8f; border-color: rgba(229, 72, 77, .45);
+                   background: rgba(229, 72, 77, .09); }
     h1 {
       font-size: clamp(34px, 6vw, 52px); line-height: 1.08;
       letter-spacing: -.03em; margin: 0 0 16px; font-weight: 800;
@@ -86,9 +95,14 @@
     .hero p { color: var(--dim); font-size: 17px; margin: 0; }
 
     /* ---------- platform cards ---------- */
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 34px; }
-    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    /* minmax(0,1fr) — not plain 1fr. A grid item defaults to min-width:auto,
+       so the card refuses to shrink below its min-content width (~565px here,
+       driven by the nowrap source URL) and overflows narrow phones. Chromium
+       clips it; iOS Safari does not, which is why this only showed on device. */
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; margin-top: 34px; }
+    @media (max-width: 720px) { .grid { grid-template-columns: minmax(0, 1fr); } }
     .card {
+      min-width: 0;
       background: linear-gradient(180deg, var(--panel-2), var(--panel));
       border: 1px solid var(--line); border-radius: var(--radius);
       padding: 24px; display: flex; flex-direction: column; gap: 16px;
@@ -103,7 +117,24 @@
     }
     .latest .v { font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
     .latest .sub { color: var(--dim); font-size: 13px; }
-    .urlrow { display: flex; gap: 8px; }
+    /* "What's new" — real changelog for the newest build */
+    .notes { border: 1px solid var(--line); border-radius: 12px; background: #0f0d18; }
+    .notes[hidden] { display: none; }
+    .notes summary {
+      cursor: pointer; padding: 11px 14px; font-size: 13.5px; font-weight: 650;
+      color: var(--dim); list-style: none; user-select: none;
+    }
+    .notes summary::-webkit-details-marker { display: none; }
+    .notes summary::after { content: " ▾"; color: var(--faint); }
+    .notes[open] summary::after { content: " ▴"; }
+    .notes summary:hover { color: var(--text); }
+    .notes-body {
+      margin: 0; padding: 0 14px 14px; font-size: 13px; line-height: 1.6;
+      color: var(--dim); white-space: pre-wrap; word-wrap: break-word;
+      font-family: inherit; max-height: 260px; overflow-y: auto;
+    }
+
+    .urlrow { display: flex; gap: 8px; min-width: 0; }
     .url {
       flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 12px; color: var(--dim);
@@ -162,6 +193,32 @@
       padding: 1px 8px; margin-left: 8px; vertical-align: 1px;
     }
     .vt .dim { color: var(--dim); }
+
+    /* Rows whose build has a changelog expand to show it. */
+    .vt tr.has-notes { cursor: pointer; }
+    .vt tr.has-notes:hover td { background: rgba(112, 85, 217, .07); }
+    .vt tr.has-notes:focus-visible { outline: 2px solid var(--purple); outline-offset: -2px; }
+    .chev {
+      display: inline-block; margin-right: 7px; color: var(--faint);
+      transition: transform .15s ease, color .15s ease;
+    }
+    .vt tr.open .chev { transform: rotate(90deg); color: var(--purple-hi); }
+    .chev-hint { color: var(--purple-hi); }
+    tr[hidden] { display: none; }
+    .notes-row td { padding: 0; background: #0f0d18; white-space: normal; }
+    .notes-row:hover td { background: #0f0d18; }
+    .notes-wrap { position: relative; }
+    /* Only added once we know the text really is clipped, so a short
+       changelog never gets a fade over nothing. */
+    .notes-wrap.clipped::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 30px;
+      background: linear-gradient(rgba(15, 13, 24, 0), #0f0d18); pointer-events: none;
+    }
+    .notes-box {
+      padding: 12px 16px 16px; font-size: 12.5px; line-height: 1.65;
+      color: var(--dim); white-space: pre-wrap; word-wrap: break-word;
+      max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
     .vt a.dl { color: var(--purple-hi); text-decoration: none; font-weight: 600; }
     .vt a.dl:hover { text-decoration: underline; }
     .sha {
@@ -190,16 +247,21 @@
       /* Title + release count can't share one line on a phone — stack them
          so the count never gets clipped off the right edge. */
       .card-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+      /* let the release count wrap instead of forcing the card wider */
+      .meta { white-space: normal; }
       /* Two side-by-side buttons can't shrink below their label width
          ("Add to AltStore" alone is ~255px), which overflowed the card on
          narrow screens. Stack them full-width instead. */
       .btns { flex-direction: column; }
       .btn { font-size: 15px; padding: 14px 10px; }
-      /* Tighten the version table and drop the redundant "App" column
-         (the app is already named in the cards above) so it needs far
-         less horizontal scrolling on a phone. */
-      .vt th, .vt td { padding: 10px 12px; font-size: 13px; }
-      .vt th:nth-child(2), .vt td:nth-child(2) { display: none; }
+      /* Fit the table on a phone with no horizontal scrolling at all: drop
+         the redundant "App" column (named in the cards above) and the
+         SHA-256 column (a desktop/verification concern — the hashes stay in
+         the JSON), and tighten the remaining cells. */
+      .vt th, .vt td { padding: 10px 8px; font-size: 12.5px; }
+      .vt th:nth-child(2), .vt td:nth-child(2),
+      .vt th:nth-child(5), .vt td:nth-child(5) { display: none; }
+      .chip { margin-left: 6px; font-size: 9.5px; padding: 1px 6px; }
     }
   </style>
 </head>
@@ -211,7 +273,10 @@
     </header>
 
     <section class="hero">
-      <span class="badge"><span class="pulse"></span> Auto-updated every 6 hours · unofficial</span>
+      <span class="badge" id="freshness" title="Checked automatically every 6 hours">
+        <span class="pulse" id="freshness-dot"></span>
+        <span id="freshness-text">Auto-updated every 6 hours · unofficial</span>
+      </span>
       <h1>Stremio,<br /><span class="tint">sideloaded.</span></h1>
       <p>Movies and series on your iPhone, iPad and Apple TV — no App Store needed.
          Add the source below to AltStore, SideStore, Feather or any signing app,
@@ -228,6 +293,10 @@
           <span class="v" id="latest-ios">—</span>
           <span class="sub" id="latest-ios-sub"></span>
         </div>
+        <details class="notes" id="notes-ios" hidden>
+          <summary>What's new</summary>
+          <p class="notes-body" id="notes-ios-body"></p>
+        </details>
         <div class="urlrow">
           <div class="url" id="url-ios"></div>
           <button class="copy" data-copy="url-ios">Copy</button>
@@ -248,6 +317,10 @@
           <span class="v" id="latest-tvos">—</span>
           <span class="sub" id="latest-tvos-sub"></span>
         </div>
+        <details class="notes" id="notes-tvos" hidden>
+          <summary>What's new</summary>
+          <p class="notes-body" id="notes-tvos-body"></p>
+        </details>
         <div class="urlrow">
           <div class="url" id="url-tvos"></div>
           <button class="copy" data-copy="url-tvos">Copy</button>
@@ -262,8 +335,10 @@
 
     <section class="versions">
       <h2>Every release, verified</h2>
-      <p>Loaded live from the source JSON. Each IPA links straight to Stremio's own CDN;
-         hashes are SHA‑256, computed by this repo's pipeline — tap one to copy it.</p>
+      <p>Loaded live from the source JSON, so this list is never out of date. Each IPA links
+         straight to Stremio's own CDN. Rows marked&nbsp;<span class="chev-hint">▸</span> have a
+         changelog — tap to read it. On wider screens every row also shows its SHA‑256
+         fingerprint, which you can tap to copy.</p>
       <div id="version-groups"><div class="loading">Loading versions…</div></div>
     </section>
 
@@ -281,6 +356,57 @@
       { key: "ios",  json: "stremio-ios.json",  label: "iOS / iPadOS" },
       { key: "tvos", json: "stremio-tvos.json", label: "Apple TV" }
     ];
+
+    // Older builds still carry the generated placeholder ("Stremio 2.0.4
+    // (build 19)."), which is not worth showing as release notes.
+    function isRealNote(text) {
+      return typeof text === "string" && text.trim() !== "" &&
+             !/^\s*.+\s+\d+(\.\d+)*\s+\(build\s+\d+\)\.\s*$/.test(text);
+    }
+
+    function relativeTime(ms) {
+      var mins = Math.round(ms / 60000);
+      if (mins < 2) return "just now";
+      if (mins < 60) return mins + " minutes ago";
+      var hours = Math.round(mins / 60);
+      if (hours < 24) return hours === 1 ? "an hour ago" : hours + " hours ago";
+      var days = Math.round(hours / 24);
+      return days === 1 ? "a day ago" : days + " days ago";
+    }
+
+    // Turn the badge's "alive" dot into something earned rather than decorative:
+    // ask GitHub when the updater last completed successfully. Read-only, no
+    // token, and the page degrades to its static text if the call fails or the
+    // unauthenticated rate limit is reached.
+    (function showFreshness() {
+      var RUNS = "https://api.github.com/repos/gorlev/stremio-altstore/actions/workflows/update.yml/runs"
+               + "?status=success&per_page=1";
+      fetch(RUNS, { headers: { Accept: "application/vnd.github+json" } })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function (d) {
+          var run = d && d.workflow_runs && d.workflow_runs[0];
+          if (!run || !run.updated_at) return;
+          var age = Date.now() - new Date(run.updated_at).getTime();
+          if (!(age >= 0)) return;
+
+          var badge = document.getElementById("freshness");
+          var dot = document.getElementById("freshness-dot");
+          var text = document.getElementById("freshness-text");
+          var hours = age / 3600000;
+          // Runs every 6 hours, so under 12 means at most one missed cycle.
+          if (hours < 12) {
+            text.textContent = "Checked " + relativeTime(age) + " · unofficial";
+          } else if (hours < 48) {
+            badge.classList.add("warn"); dot.classList.add("warn");
+            text.textContent = "Last checked " + relativeTime(age) + " · unofficial";
+          } else {
+            badge.classList.add("stale"); dot.classList.add("stale");
+            text.textContent = "Last checked " + relativeTime(age) + " — updates may have stopped";
+          }
+          badge.title = "Updater last succeeded " + new Date(run.updated_at).toLocaleString();
+        })
+        .catch(function () { /* keep the static text */ });
+    })();
 
     function fmtMB(bytes) {
       return bytes > 0 ? (bytes / 1048576).toFixed(1) + " MB" : "—";
@@ -357,6 +483,14 @@
             "build " + top.v.buildVersion + " · " + fmtDate(top.v.date) + " · " + fmtMB(top.v.size);
           document.getElementById("meta-" + p.key).textContent =
             all.length + " releases · updated " + fmtDate(top.v.date);
+
+          // Real changelog, when we managed to capture one for this build.
+          var notes = top.v.localizedDescription;
+          if (isRealNote(notes)) {
+            // textContent, never innerHTML: this is upstream-authored text.
+            document.getElementById("notes-" + p.key + "-body").textContent = notes;
+            document.getElementById("notes-" + p.key).hidden = false;
+          }
         }
 
         // versions table
@@ -372,8 +506,10 @@
         all.forEach(function (e, i) {
           var tr = document.createElement("tr");
           var sha = e.v.sha256 || "";
+          var notes = isRealNote(e.v.localizedDescription) ? e.v.localizedDescription : null;
           tr.innerHTML =
-            "<td class='ver'>v" + e.v.version + " <span class='dim'>b" + e.v.buildVersion + "</span>" +
+            "<td class='ver'>" + (notes ? "<span class='chev'>▸</span>" : "") +
+              "v" + e.v.version + " <span class='dim'>b" + e.v.buildVersion + "</span>" +
               (i === 0 ? "<span class='chip'>LATEST</span>" : "") + "</td>" +
             "<td class='dim'>" + (e.app.name || "") + "</td>" +
             "<td class='dim'>" + fmtDate(e.v.date) + "</td>" +
@@ -382,6 +518,48 @@
             "<td><a class='dl' href='" + e.v.downloadURL + "'>IPA ↓</a></td>";
           if (sha) bindCopy(tr.querySelector(".sha"), function () { return sha; });
           tb.appendChild(tr);
+
+          // Older builds carry a changelog too; hang it off the row rather
+          // than adding a column, which the phone layout has no room for.
+          if (notes) {
+            tr.classList.add("has-notes");
+            tr.tabIndex = 0;
+            tr.setAttribute("role", "button");
+            tr.setAttribute("aria-expanded", "false");
+
+            var detail = document.createElement("tr");
+            detail.className = "notes-row";
+            detail.hidden = true;
+            var cell = document.createElement("td");
+            cell.colSpan = 6;
+            var wrap = document.createElement("div");
+            wrap.className = "notes-wrap";
+            var box = document.createElement("div");
+            box.className = "notes-box";
+            // textContent, never innerHTML: upstream-authored text.
+            box.textContent = notes;
+            wrap.appendChild(box);
+            cell.appendChild(wrap);
+            detail.appendChild(cell);
+            tb.appendChild(detail);
+
+            var toggle = function (ev) {
+              // Let the hash button and the download link do their own job.
+              if (ev && ev.target && ev.target.closest && ev.target.closest("a, button")) return;
+              var opening = detail.hidden;
+              detail.hidden = !opening;
+              tr.classList.toggle("open", opening);
+              tr.setAttribute("aria-expanded", opening ? "true" : "false");
+              // Measurable only once it is laid out, so decide on first open.
+              if (opening) {
+                wrap.classList.toggle("clipped", box.scrollHeight > box.clientHeight + 1);
+              }
+            };
+            tr.addEventListener("click", toggle);
+            tr.addEventListener("keydown", function (ev) {
+              if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); toggle(ev); }
+            });
+          }
         });
         t.appendChild(tb);
         scroll.appendChild(t);

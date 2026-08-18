@@ -8,6 +8,16 @@
 #   make readme      — regenerate the README "Available versions" tables
 #   make hashes      — backfill sha256 integrity hashes (budgeted downloads)
 #   make canary      — CDN health check (newest IPAs still reachable?)
+#   make prune       — report versions whose IPA is gone (add APPLY=1 to remove)
+#   make audit       — full weekly audit: prune report + metadata verification
+#   make notes       — capture real release notes from Stremio's own source
+#                      (ARCHIVE=1 also mines Internet Archive captures)
+#   make shots       — capture App Store screenshots from Stremio's source
+#   make news        — rebuild the in-app news feed from captured changelogs
+#   make legacy      — mirror newest build into legacy app-level fields
+#   make trim        — report versions the retention policy would drop
+#   make validate    — check the JSON sources are valid and safe to publish
+#   make test        — run the test suite
 #   make lint        — Python code quality checks
 #   make format      — format Python code
 #   make clean       — remove temporary files
@@ -23,7 +33,7 @@ GREEN := \033[32m
 YELLOW := \033[33m
 RESET := \033[0m
 
-.PHONY: help dry-run update verify readme hashes canary lint format clean set-urls ios tvos stats
+.PHONY: help dry-run update verify readme hashes canary prune audit notes shots news legacy trim validate test lint format clean set-urls ios tvos stats
 
 help:  ## Show this help message
 	@echo ""
@@ -64,6 +74,46 @@ hashes:  ## Backfill sha256 integrity hashes (set BUDGET=N to override per-run c
 canary:  ## CDN health check — are the newest known IPAs still reachable?
 	@echo "$(YELLOW)→ CDN health canary$(RESET)"
 	$(PYTHON) scripts/check_cdn.py
+
+prune:  ## Report versions whose IPA is gone (APPLY=1 removes the safe ones)
+	@echo "$(YELLOW)→ Dead version check$(RESET)"
+	@# '-' so make doesn't print "Error 1/2" over the script's own report;
+	@# CI calls the script directly and does act on the exit code.
+	-@$(PYTHON) scripts/prune_dead.py $(if $(APPLY),--apply,)
+
+notes:  ## Capture real release notes from Stremio's source (DRY=1 to preview)
+	@echo "$(YELLOW)→ Capture release notes$(RESET)"
+	$(PYTHON) scripts/fetch_release_notes.py $(if $(DRY),--dry-run,) $(if $(ARCHIVE),--include-archive,)
+
+shots:  ## Capture App Store screenshots from Stremio's source (DRY=1 to preview)
+	@echo "$(YELLOW)→ Capture screenshots$(RESET)"
+	$(PYTHON) scripts/fetch_screenshots.py $(if $(DRY),--dry-run,)
+
+news:  ## Rebuild the in-app news feed from captured changelogs (DRY=1 to preview)
+	@echo "$(YELLOW)→ Rebuild news feed$(RESET)"
+	-@$(PYTHON) scripts/build_news.py $(if $(DRY),--dry-run,)
+
+legacy:  ## Mirror the newest build into legacy app-level fields (DRY=1 to preview)
+	@echo "$(YELLOW)→ Sync legacy fields$(RESET)"
+	$(PYTHON) scripts/sync_legacy_fields.py $(if $(DRY),--dry-run,)
+
+trim:  ## Report versions the retention policy would drop (APPLY=1 removes them)
+	@echo "$(YELLOW)→ Retention policy$(RESET)"
+	-@$(PYTHON) scripts/trim_versions.py $(if $(APPLY),--apply,) $(if $(KEEP),--keep $(KEEP),)
+
+validate:  ## Check the JSON sources are valid and safe to publish (STRICT=1 fails on warnings)
+	@echo "$(YELLOW)→ Validate sources$(RESET)"
+	$(PYTHON) scripts/validate_source.py $(if $(STRICT),--strict,)
+
+test:  ## Run the test suite
+	@echo "$(YELLOW)→ Tests$(RESET)"
+	$(PYTHON) -m unittest discover -s scripts -p 'test_*.py' -v
+
+audit:  ## Weekly audit: dead-version report + Info.plist metadata verification
+	@echo "$(YELLOW)→ Dead version check$(RESET)"
+	-$(PYTHON) scripts/prune_dead.py
+	@echo "$(YELLOW)→ Verify bundle IDs against the real IPAs$(RESET)"
+	-$(PYTHON) scripts/verify_bundle_ids.py
 
 ios:  ## Update only the iOS source (pass DRY/UPDATE/VERIFY via ARGS)
 	@echo "$(YELLOW)→ iOS only$(RESET)"

@@ -37,6 +37,7 @@ import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Optional
 from xml.etree import ElementTree as ET
@@ -46,6 +47,14 @@ import ipa_plist  # noqa: E402
 from ipa_plist import get_main_app_info_plist  # noqa: E402
 
 CDN_BASE = "https://dl.strem.io/apple"
+# Stremio's own AltStore source. Its download URLs are the encrypted
+# marketplace format this repo works around, but it names the current
+# release, which is used as an authoritative scan hint.
+UPSTREAM_SOURCE = "https://dl.strem.io/apple/altstore/source.json"
+# How far past the highest known build to probe. Builds are a global counter
+# that normally advances by one per release, so this is generous; the
+# upstream hint covers anything that jumps further.
+BUILD_LOOKAHEAD = 8
 USER_AGENT = f"stremio-altstore/{__file__}/1.0 (+github-actions)"
 ipa_plist.USER_AGENT = USER_AGENT
 http_request = ipa_plist.http_request
@@ -60,7 +69,7 @@ PLATFORMS = {
 VERSION_RE = re.compile(r"^(\d+\.\d+\.\d+)b(\d+)$")
 
 
-# ----------------------------- Versiyon tarama -----------------------------
+# ---------------------------- Version scanning -----------------------------
 
 def parse_version_tag(tag: str) -> Optional[tuple[str, int]]:
     """'2.0.2b17' -> ('2.0.2', 17)."""
@@ -111,9 +120,38 @@ def next_semver_candidates(known_semvers: set[str], *, patch_ahead: int = 4) -> 
     return cands
 
 
+@lru_cache(maxsize=1)
+def upstream_release_tags() -> frozenset[str]:
+    """Release tags Stremio itself is advertising, e.g. {"2.0.6b21"}.
+
+    Guessing forward from what we already know has a blind spot: the build
+    number is a global counter, so if Stremio ever skips further ahead than
+    the local window, nothing would probe the new build and the scan would
+    stay stuck on an old maximum forever. Their own AltStore source names the
+    current release outright, which closes that hole no matter how far it
+    jumps. Best-effort only — the derived candidates below still stand alone
+    if this is unreachable.
+    """
+    resp = http_request(UPSTREAM_SOURCE, timeout=15)
+    if resp.status != 200 or not resp.body:
+        return frozenset()
+    try:
+        data = json.loads(resp.body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return frozenset()
+    tags = set()
+    for app in data.get("apps", []):
+        for v in app.get("versions", []):
+            ver, build = str(v.get("version", "")), str(v.get("buildVersion", ""))
+            if VERSION_RE.match(f"{ver}b{build}"):
+                tags.add(f"{ver}b{build}")
+    return frozenset(tags)
+
+
 def scan_cdn(known_tags: Iterable[str], *, verbose: bool = False, max_workers: int = 16) -> dict[str, dict[str, dict]]:
     """
-    Scans the CDN in parallel. Tries the last known build + buffer range.
+    Scans the CDN in parallel. Tries the last known build + buffer range,
+    plus whatever Stremio's own source is currently advertising.
     Returns: {platform: {tag: {url, size, date}}}
     """
     known = set(known_tags)
@@ -131,16 +169,23 @@ def scan_cdn(known_tags: Iterable[str], *, verbose: bool = False, max_workers: i
         print(f"  [scan] probing semvers: {', '.join(sorted(semvers))}")
 
     # Scan only the last known build + buffer range (new releases are rare)
-    build_range = range(max_build, max_build + 8)
+    build_range = range(max_build, max_build + BUILD_LOOKAHEAD)
+
+    tags: set[str] = {f"{semver}b{build}" for semver in semvers for build in build_range}
+
+    # Anything upstream is advertising, however far ahead it sits.
+    hinted = upstream_release_tags()
+    beyond = sorted(t for t in hinted if t not in tags)
+    if beyond and verbose:
+        print(f"  [scan] upstream names builds outside the local window: {', '.join(beyond)}")
+    tags |= set(hinted)
 
     # Build candidate list
     candidates: list[tuple[str, str, str]] = []  # (platform, tag, url)
     for plat, info in PLATFORMS.items():
-        for semver in semvers:
-            for build in build_range:
-                tag = f"{semver}b{build}"
-                url = f"{CDN_BASE}/{tag}/{plat}/{info['file']}"
-                candidates.append((plat, tag, url))
+        for tag in tags:
+            url = f"{CDN_BASE}/{tag}/{plat}/{info['file']}"
+            candidates.append((plat, tag, url))
 
     targets: dict[str, dict[str, dict]] = {"ios": {}, "tvos": {}}
 
@@ -254,7 +299,7 @@ def process_platform(plat: str, source: dict, found: dict, *, do_info_plist: boo
                     print(f"  [UPDATE] {plat}/{tag} metadata refreshed")
             else:
                 new_count += 1
-                print(f"  [NEW] {plat}/{tag} -> added ({meta['size'] // 1024 // 1024} MB, {meta.get('date')})")
+                print(f"  [NEW] {plat}/{tag} -> added ({meta['size'] / 1048576:.1f} MB, {meta.get('date')})")
     return new_count, update_count
 
 
@@ -290,7 +335,7 @@ def main() -> int:
         print(f"\n=== {PLATFORMS[plat]['label']} ===")
         source = json.loads(json_path.read_text(encoding="utf-8"))
 
-        # Bilinen tag'leri topla
+        # Collect the tags we already list
         known_tags: set[str] = set()
         for app in source["apps"]:
             for v in app.get("versions", []):
@@ -298,7 +343,7 @@ def main() -> int:
                 bv = v.get("buildVersion", "")
                 if ver and bv:
                     known_tags.add(f"{ver}b{bv}")
-        print(f"[INFO] Bilinen versiyon: {len(known_tags)}")
+        print(f"[INFO] Known versions: {len(known_tags)}")
 
         if args.verbose:
             for t in sorted(known_tags):
@@ -322,12 +367,21 @@ def main() -> int:
         total_new += new_count
         total_updated += update_count
 
+        # process_platform creates an entry for every app it knows about, so an
+        # app whose builds have all been pulled from the CDN would reappear here
+        # as an empty shell after being removed. Drop those: an app with no
+        # versions is dead weight in a source and shows up broken in signing apps.
+        dropped = [a["name"] for a in source["apps"] if not a.get("versions")]
+        if dropped:
+            source["apps"] = [a for a in source["apps"] if a.get("versions")]
+            print(f"[CLEAN] dropped app(s) with no versions: {', '.join(dropped)}")
+
         if args.dry_run:
             if new_count or update_count:
                 print(f"[DRY-RUN] {plat}: +{new_count} new, ~{update_count} updated (not written)")
             continue
 
-        # Yaz
+        # Write
         json_path.write_text(
             json.dumps(source, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",

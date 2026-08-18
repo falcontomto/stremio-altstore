@@ -22,7 +22,36 @@
       "iconURL": "https://www.stremio.com/website/stremio-logo-small.png",
       "tintColor": "#7055D9",
       "category": "entertainment",
-      "screenshots": [],
+      "screenshots": {
+        "iphone": [
+          "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/6a/ee/19/6aee194d-7b33-aaab-b3bf-64b9773e6120/login.png/1242x2688ss.jpg",
+          "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/8a/9d/46/8a9d46c5-68f5-4396-7e97-a0fdc2e4c99b/7A634238-A47C-4B30-9373-0EDCE5E01D8C.png/1242x2688ss.jpg",
+          "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/e0/3b/96/e03b96c3-e1a5-ad13-b45a-a267cf9860a5/D1DC7867-6EE9-4837-919E-81902FC3344F.png/1242x2688ss.jpg",
+          "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/9d/ec/de/9decdee5-5e8c-4ac8-f213-6cd259ce7eeb/5EA57C1E-F7EC-4C2D-AC9A-771814B51ED4.png/1242x2688ss.jpg"
+        ],
+        "ipad": [
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/71/54/b9/7154b96c-b3e1-148b-0711-b5c26c6dc280/login-ipad.png/2048x2732ss.jpg",
+            "width": 2048,
+            "height": 2732
+          },
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/7d/ae/9c/7dae9cc9-d812-92df-46a3-301fc6b6ce1a/9B597930-50BE-4D8E-AEEC-EEF762C1E768.png/2048x2732ss.jpg",
+            "width": 2048,
+            "height": 2732
+          },
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/76/0d/24/760d2486-cdb1-5935-3d98-f21e695d7151/9A77F888-EADE-4EEB-9549-EDDA02E1BEE3.png/2048x2732ss.jpg",
+            "width": 2048,
+            "height": 2732
+          },
+          {
+            "imageURL": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/40/2b/cd/402bcd56-0df9-17c3-508b-b19540d6205e/D452C7D4-67E6-4AFF-BA25-3DF914C326DA.png/2048x2732ss.jpg",
+            "width": 2048,
+            "height": 2732
+          }
+        ]
+      },
       "appPermissions": {
         "entitlements": [],
         "privacy": {}
@@ -32,7 +61,7 @@
           "version": "2.0.6",
           "buildVersion": "21",
           "date": "2026-07-22",
-          "localizedDescription": "Stremio 2.0.6 (build 21).",
+          "localizedDescription": "feat: new desktop like UI for player and navigation on iPadOS",
           "downloadURL": "https://dl.strem.io/apple/2.0.6b21/ios/stremio_iOS.ipa",
           "size": 75942223,
           "sha256": "3ff786e83de059293d57378a742c4b70d069fa745133b5f909ea0e060dabf10d",
@@ -62,7 +91,7 @@
           "version": "2.0.3",
           "buildVersion": "18",
           "date": "2026-07-09",
-          "localizedDescription": "Stremio 2.0.3 (build 18).",
+          "localizedDescription": "feat: native Stremio app for macOS\nfeat: automatic macOS updates with delta update support\nfeat: update notices for outdated app versions\nfeat: experimental Picture in Picture support on macOS and tvOS\nfeat: improved KSPlayer Picture in Picture support\nfeat: privacy-friendly crash analytics, configurable from settings\nfeat: bottom toast notifications\nfeat: OLED dark background setting\n\nPlayback Fixes\nfix: show VLC buffering state correctly\nfix: prevent VLC playback startup and end-of-video deadlocks\nfix: prevent seek controls from getting stuck\nfix: fix crashes while seeking\nfix: keep video visible when replacing KSPlayer media\nfix: show an error message when playback fails\nfix: avoid lockups after autoplay finishes a video\nfix: clean up player animations and timers after closing playback\nfix: keep profile lock from interrupting active playback or Picture in Picture\nfix: repair Infuse callback handling\n\nInterface Fixes\nfix: stabilize Settings layout, backgrounds, separators, and account rows\nfix: improve loading and playback-error overlay layout\nfix: improve filter button row edge fade",
           "downloadURL": "https://dl.strem.io/apple/2.0.3b18/ios/stremio_iOS.ipa",
           "size": 76228970,
           "sha256": "f23c50e52756d90573c3328d7f5bb2bc5930b1fe478bf7318013d83a80cfd37a",
@@ -72,7 +101,7 @@
           "version": "2.0.2",
           "buildVersion": "17",
           "date": "2026-06-19",
-          "localizedDescription": "Stremio 2.0.2 (build 17).",
+          "localizedDescription": "fix: titles not showing on board and search",
           "downloadURL": "https://dl.strem.io/apple/2.0.2b17/ios/stremio_iOS.ipa",
           "size": 78053554,
           "sha256": "1194ab49a3b0b502d7c7395630c10c4b7c66cbac5ee73abce0a509bccb65f64f",
@@ -128,36 +157,55 @@
           "sha256": "61fd16aec965a6dd728b24a057e2c2d579477b9e6677b61166e29e1dd5c0fb1d",
           "minOSVersion": "13.0"
         }
-      ]
-    },
-    {
-      "name": "Stremio Lite",
-      "bundleIdentifier": "com.stremio.ios",
-      "developerName": "Stremio",
-      "subtitle": "Stream movies, series and more from multiple addons.",
-      "localizedDescription": "Stremio Lite — a lighter iOS build of Stremio. Add-on capable, modern media center. Requires iPhone and iPad, iOS 13.0+. Prefer the newer Stremio (PAL) 2.x releases when available.",
-      "iconURL": "https://www.stremio.com/website/stremio-logo-small.png",
-      "tintColor": "#8A5AAB",
-      "category": "entertainment",
-      "screenshots": [],
-      "appPermissions": {
-        "entitlements": [],
-        "privacy": {}
-      },
-      "versions": [
-        {
-          "version": "1.3.6",
-          "buildVersion": "7",
-          "marketingVersion": "1.3.6 beta 7",
-          "date": "2026-01-31",
-          "localizedDescription": "Stremio Lite iOS v1.3.6 beta 7.",
-          "downloadURL": "https://dl.strem.io/apple/1.3.6b7/ios/stremio_iOS.ipa",
-          "size": 79430168,
-          "sha256": "f6731511f74567363032a937e22e432b069276c369489974d395eb4bbf837478",
-          "minOSVersion": "13.0"
-        }
+      ],
+      "version": "2.0.6",
+      "versionDate": "2026-07-22",
+      "versionDescription": "feat: new desktop like UI for player and navigation on iPadOS",
+      "downloadURL": "https://dl.strem.io/apple/2.0.6b21/ios/stremio_iOS.ipa",
+      "size": 75942223,
+      "minOSVersion": "13.0",
+      "screenshotURLs": [
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/6a/ee/19/6aee194d-7b33-aaab-b3bf-64b9773e6120/login.png/1242x2688ss.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/8a/9d/46/8a9d46c5-68f5-4396-7e97-a0fdc2e4c99b/7A634238-A47C-4B30-9373-0EDCE5E01D8C.png/1242x2688ss.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/e0/3b/96/e03b96c3-e1a5-ad13-b45a-a267cf9860a5/D1DC7867-6EE9-4837-919E-81902FC3344F.png/1242x2688ss.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/9d/ec/de/9decdee5-5e8c-4ac8-f213-6cd259ce7eeb/5EA57C1E-F7EC-4C2D-AC9A-771814B51ED4.png/1242x2688ss.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/71/54/b9/7154b96c-b3e1-148b-0711-b5c26c6dc280/login-ipad.png/2048x2732ss.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/7d/ae/9c/7dae9cc9-d812-92df-46a3-301fc6b6ce1a/9B597930-50BE-4D8E-AEEC-EEF762C1E768.png/2048x2732ss.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/76/0d/24/760d2486-cdb1-5935-3d98-f21e695d7151/9A77F888-EADE-4EEB-9549-EDDA02E1BEE3.png/2048x2732ss.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/40/2b/cd/402bcd56-0df9-17c3-508b-b19540d6205e/D452C7D4-67E6-4AFF-BA25-3DF914C326DA.png/2048x2732ss.jpg"
       ]
     }
   ],
-  "news": []
+  "news": [
+    {
+      "title": "Stremio 2.0.6",
+      "identifier": "com-stremio-pal-2-0-6-b21-iphone-ipad",
+      "caption": "feat: new desktop like UI for player and navigation on iPadOS",
+      "tintColor": "7055D9",
+      "date": "2026-07-22",
+      "notify": false,
+      "appID": "com.stremio.pal",
+      "imageURL": "https://www.stremio.com/website/stremio-logo-small.png"
+    },
+    {
+      "title": "Stremio 2.0.3",
+      "identifier": "com-stremio-pal-2-0-3-b18-iphone-ipad",
+      "caption": "feat: native Stremio app for macOS",
+      "tintColor": "7055D9",
+      "date": "2026-07-09",
+      "notify": false,
+      "appID": "com.stremio.pal",
+      "imageURL": "https://www.stremio.com/website/stremio-logo-small.png"
+    },
+    {
+      "title": "Stremio 2.0.2",
+      "identifier": "com-stremio-pal-2-0-2-b17-iphone-ipad",
+      "caption": "fix: titles not showing on board and search",
+      "tintColor": "7055D9",
+      "date": "2026-06-19",
+      "notify": false,
+      "appID": "com.stremio.pal",
+      "imageURL": "https://www.stremio.com/website/stremio-logo-small.png"
+    }
+  ]
 }

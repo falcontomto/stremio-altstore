@@ -6,18 +6,9 @@ name: Update Stremio source
 
 on:
   schedule:
-    # Her 6 saatte bir (UTC)
+    # Every 6 hours (UTC)
     - cron: "0 */6 * * *"
   workflow_dispatch:
-    inputs:
-      info_plist:
-        description: "Parse Info.plist from new IPAs (slower, ~100KB/IPA)"
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - "true"
   push:
     # Skip re-running for our own commits (prevents an infinite loop)
     paths-ignore:
@@ -45,17 +36,23 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Cache pip
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+
+      - name: Run the test suite
+        # Under a second, no network. Covers the publish gate, the prune
+        # safety rails, the IPA parser and the discovery logic — the parts
+        # whose failure would be silent rather than loud.
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
 
       - name: Run updater (dry-run, log only)
         id: dry
@@ -68,11 +65,19 @@ jobs:
         id: apply
         run: |
           set -e
-          ARGS=(--platform all)
-          if [ "${{ inputs.info_plist }}" = "true" ]; then
-            ARGS+=(--info-plist)
-          fi
-          python3 stremio-updater.py "${ARGS[@]}"
+          # --info-plist is always on: without it new versions get a hardcoded
+          # minOSVersion of 13.0, which silently drifted from the IPAs' real
+          # 15.0 and told tvOS 13/14 users an incompatible build would run.
+          # It only reads ~100 KB per discovered IPA via HTTP Range.
+          python3 stremio-updater.py --platform all --info-plist
+
+      - name: Capture release notes
+        # Stremio publishes a real changelog per release, but only for the
+        # newest couple of builds — so this has to run on the normal cadence
+        # to catch each one before it rolls out of their window. Never fails
+        # the run: notes are a nicety, the source itself is the product.
+        continue-on-error: true
+        run: python3 scripts/fetch_release_notes.py
 
       - name: Backfill IPA integrity hashes (budgeted)
         # Adds sha256 to a few versions per run (newest first). Downloads full
@@ -89,6 +94,24 @@ jobs:
           # Rebuilds the "Available versions" tables from the JSON sources.
           # Deterministic, no network — only rewrites the marked block.
           python3 scripts/render_readme.py
+
+      - name: Rebuild the in-app news feed
+        # Turns captured changelogs into the `news` array signing apps render.
+        # Must run after the notes capture and before validation, which
+        # enforces that at most one item asks to notify.
+        run: python3 scripts/build_news.py
+
+      - name: Mirror newest build into legacy fields
+        # AltStore Classic and some forks read flat app-level fields instead of
+        # the versions array; without them they show no release notes. Must run
+        # after anything that changes versions, and before validation.
+        run: python3 scripts/sync_legacy_fields.py
+
+      - name: Validate sources before publishing
+        # Last gate: several steps above rewrite these files, and whatever we
+        # push reaches users in minutes. A failure here fails the job, so a
+        # malformed or unsafe source is never committed.
+        run: python3 scripts/validate_source.py
 
       - name: Check for changes
         id: diff
@@ -152,7 +175,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 

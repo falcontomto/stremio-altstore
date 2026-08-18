@@ -1,0 +1,192 @@
+name: Weekly source audit
+
+# Two things the 6-hourly updater cannot catch, because it only ever looks
+# for *new* builds:
+#   1. Builds Stremio has pulled since we listed them — the JSON keeps
+#      pointing at a dead URL and users get "failed to download".
+#   2. Metadata drift — bundle id / version / minOS in the JSON no longer
+#      matching what is actually inside the IPA.
+# Both are slow-moving, so this runs weekly rather than every 6 hours.
+
+on:
+  schedule:
+    # Mondays 04:30 UTC — off-cycle from the 6-hourly updater
+    - cron: "30 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+# Shares the updater's concurrency group on purpose: both jobs can commit
+# and push, and queueing them is what keeps the two from racing.
+concurrency:
+  group: update-stremio-source
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Prune dead IPAs and verify metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Run the test suite
+        # This job prunes versions and rewrites metadata, so verify the
+        # safety rails and the publish gate before trusting either.
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+      - name: Prune versions whose IPA is gone
+        id: prune
+        run: |
+          set +e
+          python3 scripts/prune_dead.py --apply 2>&1 | tee prune.txt
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify bundle IDs against the real IPAs
+        id: verify
+        run: |
+          set +e
+          # --fix corrects minOSVersion only; identity fields stay reported-only.
+          python3 scripts/verify_bundle_ids.py --verbose --fix 2>&1 | tee verify.txt
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Trim the version list
+        # The list only ever grew. Keeps the newest dozen plus anything that
+        # is the last option for an OS floor or a release line, so trimming
+        # can never strand a device. Weekly is plenty for ~one build a week.
+        run: python3 scripts/trim_versions.py --apply
+
+      - name: Recover missing changelogs from the archive
+        # The 6-hourly job captures notes from the live source, which only
+        # shows the newest builds. Internet Archive captures of that same URL
+        # are the only way back to anything that rolled out of the window
+        # before this repo started capturing. Weekly is plenty, and it never
+        # overwrites a note we already hold.
+        continue-on-error: true
+        run: python3 scripts/fetch_release_notes.py --include-archive
+
+      - name: Refresh screenshots
+        # Screenshots are stable, unlike release notes, so weekly is enough.
+        # Never fails the run: a gallery is a nicety, the source is the product.
+        continue-on-error: true
+        run: python3 scripts/fetch_screenshots.py
+
+      - name: Regenerate README version tables
+        run: python3 scripts/render_readme.py
+
+      - name: Rebuild the in-app news feed
+        # Turns captured changelogs into the `news` array signing apps render.
+        # Must run after the notes capture and before validation, which
+        # enforces that at most one item asks to notify.
+        run: python3 scripts/build_news.py
+
+      - name: Mirror newest build into legacy fields
+        # AltStore Classic and some forks read flat app-level fields instead of
+        # the versions array; without them they show no release notes. Must run
+        # after anything that changes versions, and before validation.
+        run: python3 scripts/sync_legacy_fields.py
+
+      - name: Validate sources before publishing
+        # The prune and --fix steps above rewrite these files; refuse to
+        # publish the result if it is no longer a valid, safe source.
+        run: python3 scripts/validate_source.py
+
+      - name: Commit and push any corrections
+        id: commit
+        run: |
+          if git diff --quiet stremio-ios.json stremio-tvos.json README.md; then
+            echo "Nothing to correct — no commit."
+            exit 0
+          fi
+          git config user.name "stremio-altstore-bot"
+          git config user.email "bot@stremio-altstore.local"
+          git add stremio-ios.json stremio-tvos.json README.md
+          DIFFSTAT=$(git diff --cached --stat stremio-ios.json stremio-tvos.json README.md | tail -1)
+          git commit -m "chore: weekly source audit corrections" \
+                     -m "Removed versions returning 404 on dl.strem.io and/or corrected minOSVersion values that had drifted from the IPAs' own Info.plist." \
+                     -m "" \
+                     -m "$DIFFSTAT"
+          # Same rebase-and-retry as the updater, in case it pushed meanwhile.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "Pushed on attempt $attempt."
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Push still rejected after $attempt attempts."
+              exit 1
+            fi
+            git pull --rebase origin main
+          done
+
+      - name: Summarise
+        run: |
+          {
+            echo "## Weekly source audit"
+            echo ""
+            echo "- Prune exit code: \`${{ steps.prune.outputs.rc }}\` (0 clean · 1 dead found · 2 needs a human)"
+            echo "- Verify exit code: \`${{ steps.verify.outputs.rc }}\` (0 all metadata matches)"
+            echo ""
+            echo '<details><summary>Prune output</summary>'
+            echo ""
+            echo '```'
+            tail -40 prune.txt
+            echo '```'
+            echo '</details>'
+            echo ""
+            echo '<details><summary>Verify output</summary>'
+            echo ""
+            echo '```'
+            tail -40 verify.txt
+            echo '```'
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open an issue if something needs a human
+        if: steps.prune.outputs.rc == '2' || steps.verify.outputs.rc != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Deduplicate by title marker so a standing problem doesn't spam issues.
+          EXISTING=$(gh issue list --state open --search 'in:title [SOURCE-AUDIT]' --json number --jq 'length')
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "An open [SOURCE-AUDIT] issue already exists — not opening a duplicate."
+            exit 0
+          fi
+          {
+            echo "The weekly audit found something it will not fix on its own."
+            echo ""
+            echo "- Prune exit code: \`${{ steps.prune.outputs.rc }}\` — \`2\` means an app has no"
+            echo "  working versions left, the newest version is gone, or too many died at once."
+            echo "- Verify exit code: \`${{ steps.verify.outputs.rc }}\` — non-zero means the JSON"
+            echo "  metadata no longer matches the IPA's own Info.plist, or an IPA could not be read."
+            echo ""
+            echo "Dead versions that were safe to remove have already been pruned and pushed."
+            echo ""
+            echo "<details><summary>Prune output</summary>"
+            echo ""
+            echo '```'
+            tail -40 prune.txt
+            echo '```'
+            echo "</details>"
+            echo ""
+            echo "<details><summary>Verify output</summary>"
+            echo ""
+            echo '```'
+            tail -40 verify.txt
+            echo '```'
+            echo "</details>"
+            echo ""
+            echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          } > body.md
+          gh issue create \
+            --title "[SOURCE-AUDIT] Dead IPAs or metadata drift need a decision" \
+            --body-file body.md
